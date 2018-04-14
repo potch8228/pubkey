@@ -54,17 +54,17 @@ func (p *PubKey) loadFile(filename string) {
 	f, err := os.Open(filename)
 	defer f.Close()
 	if err != nil {
-		panic("Can't open settings file")
+		log.Fatalln("Can't open settings file")
 	}
 
 	d, err := ioutil.ReadAll(f)
 	if err != nil {
-		panic("Can't read settings file")
+		log.Fatalln("Can't read settings file")
 	}
 
 	var u []user
 	if yaml.Unmarshal(d, &u) != nil {
-		panic("Can't unmarshal settings file")
+		log.Fatalln("Can't unmarshal settings file")
 	}
 
 	p.users = make(map[string]*user, len(u))
@@ -84,7 +84,6 @@ func (p *PubKey) FillKeys() *PubKey {
 		resp, err := cli.Get(URL + u + URL_SUFFIX)
 		if err != nil {
 			log.Fatalln("Failed to fetch public key: " + u)
-			continue
 		}
 		if body, err := ioutil.ReadAll(resp.Body); err == nil {
 			b := new(strings.Builder)
