@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/google/go-github/github"
 	"gopkg.in/yaml.v2"
@@ -31,23 +30,7 @@ type PubKey struct {
 func NewPubKey() *PubKey {
 	p := new(PubKey)
 	p.load()
-	p.setHttpTransport()
 	return p
-}
-
-// Initialize with custom setting file location
-func NewPubKeyWithSettings(name string) *PubKey {
-	p := new(PubKey)
-	p.loadFile(name)
-	p.setHttpTransport()
-	return p
-}
-
-func (p *PubKey) setHttpTransport() {
-	p.transport = &http.Transport{
-		MaxIdleConns:    10,
-		IdleConnTimeout: 30 * time.Second,
-	}
 }
 
 func (p *PubKey) loadFile(filename string) {
