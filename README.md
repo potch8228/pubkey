@@ -4,10 +4,13 @@
 This is a program which collects GitHub user's public keys and format them as an SSH's authorized keys format.
 
 ## How to use?
-1. List multiple GitHub user IDs as following YAML format in `settings.yml`:
+1. List multiple GitHub user (and/or) member IDs as following YAML format in `settings.yml`:
 
 ```
-- id: <github id>
+users:
+  - id: <github user id>
+teams:
+  - id: <github team id>
 ```
 
 2. Execute the program and the formatted data will be on the standard output.
