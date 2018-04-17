@@ -1,6 +1,7 @@
 package pubkey
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -8,18 +9,16 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"time"
 
+	"github.com/google/go-github/github"
 	"gopkg.in/yaml.v2"
 )
 
-const URL = "https://github.com/"
-const URL_SUFFIX = ".keys"
 const SETTINGS_FILE = "settings.yml"
 
 type user struct {
 	Id   string
-	Keys []string
+	Keys []*github.Key
 }
 
 type PubKey struct {
@@ -31,23 +30,7 @@ type PubKey struct {
 func NewPubKey() *PubKey {
 	p := new(PubKey)
 	p.load()
-	p.setHttpTransport()
 	return p
-}
-
-// Initialize with custom setting file location
-func NewPubKeyWithSettings(name string) *PubKey {
-	p := new(PubKey)
-	p.loadFile(name)
-	p.setHttpTransport()
-	return p
-}
-
-func (p *PubKey) setHttpTransport() {
-	p.transport = &http.Transport{
-		MaxIdleConns:    10,
-		IdleConnTimeout: 30 * time.Second,
-	}
 }
 
 func (p *PubKey) loadFile(filename string) {
@@ -79,18 +62,13 @@ func (p *PubKey) load() {
 
 // Fetch user's public key data from GitHub
 func (p *PubKey) FillKeys() *PubKey {
+	cli := github.NewClient(nil)
 	for u, _ := range p.users {
-		cli := &http.Client{Transport: p.transport}
-		resp, err := cli.Get(URL + u + URL_SUFFIX)
+		keys, resp, err := cli.Users.ListKeys(context.Background(), u, nil)
 		if err != nil {
 			log.Fatalln("Failed to fetch public key: " + u)
 		}
-		if body, err := ioutil.ReadAll(resp.Body); err == nil {
-			b := new(strings.Builder)
-			b.Write(body)
-			keys := strings.Split(b.String(), "\n")
-			p.users[u].Keys = keys
-		}
+		p.users[u].Keys = keys
 		resp.Body.Close()
 	}
 	return p
@@ -107,10 +85,7 @@ func (p *PubKey) OutputList(to io.Writer) int {
 	for u, _ := range p.users {
 		for i, _ := range p.users[u].Keys {
 			k := p.users[u].Keys[i]
-			if len(k) == 0 {
-				continue
-			}
-			sb.WriteString(fmt.Sprintf("%s %s\n", k, u))
+			sb.WriteString(fmt.Sprintf("%s %s\n", *k.Key, u))
 		}
 	}
 	fmt.Fprint(to, sb.String())

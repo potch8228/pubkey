@@ -2,6 +2,18 @@
 
 
 [[projects]]
+  name = "github.com/google/go-github"
+  packages = ["github"]
+  revision = "e48060a28fac52d0f1cb758bc8b87c07bac4a87d"
+  version = "v15.0.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/google/go-querystring"
+  packages = ["query"]
+  revision = "53e6ce116135b80d037921a7fdd5138cf32d7a8a"
+
+[[projects]]
   name = "gopkg.in/yaml.v2"
   packages = ["."]
   revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
@@ -10,6 +22,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "ce4cfa8aa3eb29f45e7ba341fdeac9820969e663181e81bddfc4a3aa2d5169bb"
+  inputs-digest = "574fc9d555dee42b5753fc9c52b3460e0674d66f66256803f1f332f2f335327e"
   solver-name = "gps-cdcl"
   solver-version = 1
