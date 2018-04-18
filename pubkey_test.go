@@ -8,6 +8,7 @@ import (
 
 func TestPubKey_LoadSettings(t *testing.T) {
 	p := new(PubKey)
+	p.newClient()
 	p.loadFile("./settings_test.yml")
 
 	if len(p.users) == 0 {
@@ -23,9 +24,8 @@ func TestPubKey_LoadSettings(t *testing.T) {
 
 func TestPubKey_LoadPubKeys(t *testing.T) {
 	p := new(PubKey)
+	p.newClient()
 	p.loadFile("./settings_test.yml")
-
-	p.setHttpTransport()
 
 	p.FillKeys()
 
@@ -38,9 +38,8 @@ func TestPubKey_LoadPubKeys(t *testing.T) {
 
 func TestPubKey_OutputList(t *testing.T) {
 	p := new(PubKey)
+	p.newClient()
 	p.loadFile("./settings_test.yml")
-
-	p.setHttpTransport()
 
 	p.FillKeys()
 
