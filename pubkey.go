@@ -122,7 +122,10 @@ func (p *PubKey) FillKeys() *PubKey {
 		}
 		keys, resp, err := p.client.Users.ListKeys(context.Background(), u, nil)
 		if err != nil {
-			log.Fatalln("Failed to fetch public key: " + u)
+			log.Println("Failed to fetch public key: " + u)
+		}
+		if len(keys) == 0 {
+			log.Println(u + " doesn't have public keys.")
 		}
 		p.users[u].Keys = keys
 		resp.Body.Close()
@@ -141,7 +144,9 @@ func (p *PubKey) OutputList(to io.Writer) int {
 	for u, _ := range p.users {
 		for i, _ := range p.users[u].Keys {
 			k := p.users[u].Keys[i]
-			sb.WriteString(fmt.Sprintf("%s %s\n", *k.Key, u))
+			if k.Key != nil {
+				sb.WriteString(fmt.Sprintf("%s %s\n", *k.Key, u))
+			}
 		}
 	}
 	fmt.Fprint(to, sb.String())
