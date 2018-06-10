@@ -1,1 +1,4 @@
-# format: - id: <github id>
+#users:
+#  - id: <github user id>
+#teams:
+#  - id: <github team id>

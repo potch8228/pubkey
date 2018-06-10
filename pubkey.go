@@ -6,15 +6,28 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"strings"
 
 	"github.com/google/go-github/github"
+	"golang.org/x/oauth2"
 	"gopkg.in/yaml.v2"
 )
 
 const SETTINGS_FILE = "settings.yml"
+
+type yamlSetting struct {
+	Users []yamlUser
+	Teams []yamlTeam
+}
+
+type yamlUser struct {
+	Id string
+}
+
+type yamlTeam struct {
+	Id string
+}
 
 type user struct {
 	Id   string
@@ -22,13 +35,14 @@ type user struct {
 }
 
 type PubKey struct {
-	transport *http.Transport
-	users     map[string]*user
+	users  map[string]*user
+	client *github.Client
 }
 
-// Initialize with default settings.yml location
+// Initialize with custom setting file location
 func NewPubKey() *PubKey {
 	p := new(PubKey)
+	p.newClient()
 	p.load()
 	return p
 }
@@ -45,28 +59,73 @@ func (p *PubKey) loadFile(filename string) {
 		log.Fatalln("Can't read settings file")
 	}
 
-	var u []user
-	if yaml.Unmarshal(d, &u) != nil {
+	s := yamlSetting{}
+	if yaml.Unmarshal(d, &s) != nil {
 		log.Fatalln("Can't unmarshal settings file")
 	}
 
-	p.users = make(map[string]*user, len(u))
-	for i, _ := range u {
-		p.users[u[i].Id] = &u[i]
+	p.users = make(map[string]*user)
+	for i, _ := range s.Users {
+		u := &user{s.Users[i].Id, nil}
+		p.users[u.Id] = u
 	}
+	for i, _ := range s.Teams {
+		t := s.Teams[i]
+		users := p.GetMembers(t.Id)
+		for i := range users {
+			u := &user{users[i], nil}
+			p.users[users[i]] = u
+		}
+	}
+}
+
+func (p *PubKey) GetMembers(team string) []string {
+	users, resp, err := p.client.Organizations.ListMembers(context.Background(), team, nil)
+	if err != nil {
+		log.Println(resp)
+		log.Fatalln("Failed to fetch members: " + team)
+	}
+
+	result := make([]string, len(users))
+	for i := range users {
+		u := users[i]
+		result[i] = *u.Login
+	}
+	return result
 }
 
 func (p *PubKey) load() {
 	p.loadFile(SETTINGS_FILE)
 }
 
+// NewClient creates APIClient
+func (p *PubKey) newClient() {
+	token := os.Getenv("GITHUB_TOKEN")
+	var client *github.Client
+	if token == "" {
+		client = github.NewClient(nil)
+	} else {
+		ts := oauth2.StaticTokenSource(
+			&oauth2.Token{AccessToken: token},
+		)
+		tc := oauth2.NewClient(context.Background(), ts)
+		client = github.NewClient(tc)
+	}
+	p.client = client
+}
+
 // Fetch user's public key data from GitHub
 func (p *PubKey) FillKeys() *PubKey {
-	cli := github.NewClient(nil)
 	for u, _ := range p.users {
-		keys, resp, err := cli.Users.ListKeys(context.Background(), u, nil)
+		if u == "" {
+			continue
+		}
+		keys, resp, err := p.client.Users.ListKeys(context.Background(), u, nil)
 		if err != nil {
-			log.Fatalln("Failed to fetch public key: " + u)
+			log.Println("Failed to fetch public key: " + u)
+		}
+		if len(keys) == 0 {
+			log.Println(u + " doesn't have public keys.")
 		}
 		p.users[u].Keys = keys
 		resp.Body.Close()
@@ -85,7 +144,9 @@ func (p *PubKey) OutputList(to io.Writer) int {
 	for u, _ := range p.users {
 		for i, _ := range p.users[u].Keys {
 			k := p.users[u].Keys[i]
-			sb.WriteString(fmt.Sprintf("%s %s\n", *k.Key, u))
+			if k.Key != nil {
+				sb.WriteString(fmt.Sprintf("%s %s\n", *k.Key, u))
+			}
 		}
 	}
 	fmt.Fprint(to, sb.String())
