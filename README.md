@@ -22,3 +22,6 @@ MIT
 
 ## Author
 Tatsuya Kobayashi
+
+## Special Thanks (Contribution)
+YOSHIDA Katsuhiko @kyoshidajp
